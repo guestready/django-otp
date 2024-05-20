@@ -1,5 +1,5 @@
+from post_office import mail
 from django.contrib.humanize.templatetags.humanize import naturaltime
-from django.core.mail import send_mail
 from django.db import models
 from django.template import Context, Template
 from django.template.loader import get_template
@@ -100,25 +100,19 @@ class EmailDevice(TimestampMixin, CooldownMixin, ThrottlingMixin, SideChannelDev
         else:
             body_html = None
 
-        self.send_mail(body, html_message=body_html)
+        self.send_mail(body, body_html)
 
         message = gettext("sent by email")
 
         return message
 
-    def send_mail(self, body, **kwargs):
-        """
-        A simple wrapper for :func:`django.core.mail.send_mail`.
-
-        Subclasses (e.g. proxy models) may override this to customize delivery.
-
-        """
-        send_mail(
-            str(settings.OTP_EMAIL_SUBJECT),
-            body,
-            settings.OTP_EMAIL_SENDER,
-            [self.email or self.user.email],
-            **kwargs,
+    def send_mail(self, body, body_html):
+        mail.send(
+            recipients=[self.email or self.user.email],
+            sender=settings.OTP_EMAIL_SENDER,
+            subject=str(settings.OTP_EMAIL_SUBJECT),
+            message=body,
+            priority="now",
         )
 
     def verify_token(self, token):
